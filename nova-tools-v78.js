@@ -29,6 +29,7 @@ css.textContent=[
 'height:39px;min-width:39px;border:1px solid #d0e4ed;background:#f4fafc;color:#255f7c;',
 'border-radius:11px;cursor:pointer;font-size:20px;flex:none}',
 '.nova-v78-headerbtn:hover{background:#e6f3f9}',
+'.nova-v78-headerbtn[hidden]{display:none!important}',
 '.nova-v78-badge{position:absolute;right:-4px;top:-5px;border:2px solid white;',
 'background:#be4350;color:white;border-radius:99px;min-width:19px;height:19px;',
 'display:none;align-items:center;justify-content:center;font:800 10px system-ui}',
@@ -309,6 +310,16 @@ document.addEventListener('click',e=>{
  if(e.target.closest('[data-action="logout"]')){close();latestAlerts=[];setBadge(0);lastRole=null}
 },true);
 updateVisibility();
-// Se comprueba periódicamente si hay sesión; la primera lectura ocurre cuando se abre el panel.
+// Los paneles de inicio/cierre de sesión alternan .hidden en #appView.
+const sessionObserver=new MutationObserver(()=>{
+ const previous=lastRole;
+ updateVisibility();
+ if(bactive()&&previous!==role()){
+   lastRole=role();latestAlerts=[];setBadge(0);
+   refreshAlerts(true);
+ }
+});
+sessionObserver.observe(app,{attributes:true,attributeFilter:['class']});
+// Se comprueba periódicamente si hay sesión y al cambiar de rol.
 window.NovaV78Tools={openAgenda:()=>open('agenda'),openNotices:()=>open('avisos'),refresh:()=>refreshAlerts(true)};
 })();
