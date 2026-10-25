@@ -1036,7 +1036,9 @@ document.addEventListener('click',e=>{
     if(!remoteOk()) return window.__novaLocalRenderAppointments?.(c);
     const global=state.role==='gerencia';
     const defaultBranch=global?'Todas las sedes':userBranch();
-    c.innerHTML=`<div class="toolbar"><div class="left"><select id="apptBranch" ${global?'':'disabled'}>${branchOptions(true)}</select><select id="apptDoctor"><option value="">Todos los médicos</option></select><select id="apptStatus"><option value="">Todos los estados</option><option>Programada</option><option>Confirmada</option><option>Realizada</option><option>Cancelada</option><option value="NO_ASISTIO">No asistió</option></select></div><div class="right">${dbBadge}${actionAllowed('new-appointment')?'<button class="btn btn-primary" data-action="new-appointment">+ Nueva cita</button>':''}</div></div><div id="apptTable">${loading('Consultando citas...')}</div>`;
+    const apptToday=(()=>{const d=new Date(),z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`})();
+    const apptNext7=(()=>{const d=new Date();d.setDate(d.getDate()+7);const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`})();
+    c.innerHTML=`<div class="toolbar"><div class="left"><select id="apptBranch" ${global?'':'disabled'}>${branchOptions(true)}</select><select id="apptDoctor"><option value="">Todos los médicos</option></select><select id="apptStatus"><option value="">Todos los estados</option><option>Programada</option><option>Confirmada</option><option>Realizada</option><option>Cancelada</option><option value="NO_ASISTIO">No asistió</option></select><label>Desde<input id="apptFrom" type="date" value="${apptToday}"></label><label>Hasta<input id="apptTo" type="date" value="${apptNext7}"></label></div><div class="right">${dbBadge}${actionAllowed('new-appointment')?'<button class="btn btn-primary" data-action="new-appointment">+ Nueva cita</button>':''}</div></div><div class="notice" style="margin-bottom:12px"><b>Agenda:</b> se muestran hoy y los próximos 7 días. Puedes ampliar el rango.</div><div id="apptTable">${loading('Consultando citas...')}</div>`;
     $('#apptBranch').value=defaultBranch;
     const loadDoctors=async()=>{
       const branch=$('#apptBranch').value;
@@ -1050,7 +1052,7 @@ document.addEventListener('click',e=>{
     const update=async()=>{
       const box=$('#apptTable');box.innerHTML=loading('Consultando PostgreSQL...');
       try{
-        const rows=await NovaAPI.staffAppointments({branch:$('#apptBranch').value,doctor:state.role==='medico'?state.user.staffCode:$('#apptDoctor').value,status:$('#apptStatus').value,limit:300});
+        const rows=await NovaAPI.staffAppointments({branch:$('#apptBranch').value,doctor:state.role==='medico'?state.user.staffCode:$('#apptDoctor').value,status:$('#apptStatus').value,from:$('#apptFrom').value||null,to:$('#apptTo').value||null,limit:1000});
         box.innerHTML=rowTable(['Código','Paciente','DNI','Médico','Sede','Fecha','Hora','Estado','Motivo'],rows.map(a=>[
           esc(a.id),esc(a.patient),esc(a.patient_dni),esc(a.doctor),esc(a.branch),esc(a.fecha),esc(a.hora),
           `<span class="badge ${String(a.status).toLowerCase()==='realizada'?'ok':String(a.status).toLowerCase()==='cancelada'?'danger':'warn'}">${esc(a.status)}</span>`,esc(a.reason||'—')
@@ -1060,7 +1062,7 @@ document.addEventListener('click',e=>{
     };
     await loadDoctors();
     $('#apptBranch').onchange=async()=>{await loadDoctors();await update()};
-    $('#apptDoctor').onchange=update;$('#apptStatus').onchange=update;
+    $('#apptDoctor').onchange=update;$('#apptStatus').onchange=update;$('#apptFrom').onchange=update;$('#apptTo').onchange=update;
     await update();
   }
 
