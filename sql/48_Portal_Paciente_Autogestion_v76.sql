@@ -137,6 +137,15 @@ BEGIN
      AND pe.id_sede=v_sede AND COALESCE(sl.estado_laboral,'ACTIVO')='ACTIVO'
    LIMIT 1;
   IF v_doctor IS NULL THEN RAISE EXCEPTION 'Médico no disponible en esa sede'; END IF;
+  -- Una reprogramación no puede cambiar silenciosamente de especialidad.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.medico origen JOIN public.medico destino
+      ON destino.id_personal=v_doctor
+    WHERE origen.id_personal=v_old.id_medico
+      AND lower(trim(origen.especialidad))=lower(trim(destino.especialidad))
+  ) THEN
+    RAISE EXCEPTION 'Para cambiar de especialidad debes solicitar otra cita';
+  END IF;
   IF v_doctor=v_old.id_medico AND v_sede=v_old.id_sede
      AND p_fecha=v_old.fecha AND p_hora=v_old.hora THEN
     RAISE EXCEPTION 'Selecciona una fecha, hora o médico diferente';
