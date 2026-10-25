@@ -2086,10 +2086,41 @@ document.addEventListener('click',e=>{
   const oldRenderDashboardV74=window.renderDashboard;
 
   async function doctorDashboard(c){
+    const addDaysISO=(iso,n)=>{const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);const m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${d.getFullYear()}-${m}-${day}`};
+    const dayLabel=iso=>new Date(iso+'T12:00:00').toLocaleDateString('es-PE',{weekday:'short',day:'2-digit',month:'2-digit'});
+    const doctorStatus=s=>{const u=String(s||'').toUpperCase();return `<span class="badge ${u==='REALIZADA'?'ok':u==='CANCELADA'?'danger':'warn'}">${esc(label(u))}</span>`};
+    const today=localDate(), weekEnd=addDaysISO(today,6);
     c.innerHTML=loading('Cargando dashboard médico real...');
     try{
-      const d=await NovaAPI.doctorDashboard(localDate()),p=d.profile||{},k=d.kpis||{},next=d.next_appointment||null,agenda=d.agenda||[],labs=d.lab_results||[];
-      c.innerHTML=`<div class="workflow-toolbar"><div><h3 style="margin:0">${esc(p.name||state.user.name)}</h3><div class="muted">${esc(p.specialty||'Médico')} · ${esc(p.branch||userBranch())} · ${esc(label(p.work_status))}</div></div><div class="v74-actions"><span class="badge ok">PostgreSQL real</span><button class="btn btn-primary" data-page="appointments">Mi agenda</button><button class="btn btn-outline" data-page="history">Historial clínico</button></div></div><div class="v74-note"><b>Dashboard Médico real:</b> agenda, consultas y resultados de laboratorio pertenecen únicamente al médico autenticado.</div>${kpis([{label:'Citas hoy',value:k.appointments_today||0},{label:'Atendidas hoy',value:k.attended_today||0},{label:'Consultas del mes',value:k.consultations_month||0},{label:'Pacientes del mes',value:k.patients_month||0},{label:'Resultados Lab.',value:k.lab_ready||0}])}<div class="v74-grid"><div class="v74-card"><h3>Agenda de los próximos 7 días</h3>${agenda.length?rowTable(['Fecha','Hora','Paciente','DNI','Motivo','Estado'],agenda.map(x=>[esc(x.fecha),esc(x.time),esc(x.patient),esc(x.dni),esc(x.reason||'—'),badge(x.status)])):'<div class="notice">No hay citas en los próximos 7 días.</div>'}</div><div class="v74-card"><h3>Próxima atención</h3>${next?`<div class="v74-item"><b>${esc(next.fecha)} · ${esc(next.time)}</b><small>${esc(next.patient)} · ${esc(next.reason||'Consulta')}</small></div>`:'<div class="notice">Sin citas pendientes.</div>'}<h3 style="margin-top:16px">Laboratorio listo</h3><div class="v74-stack">${labs.length?labs.slice(0,6).map(x=>`<div class="v74-item"><b>${esc(x.patient)} · ${esc(x.test)}</b><small>${esc(x.occurred_at)} · ${esc(label(x.status))}</small></div>`).join(''):'<div class="notice">Sin resultados listos.</div>'}</div></div></div>`;
+      const d=await NovaAPI.doctorDashboard(today),p=d.profile||{},k=d.kpis||{},next=d.next_appointment||null,labs=d.lab_results||[];
+      c.innerHTML=`<div class="workflow-toolbar"><div><h3 style="margin:0">${esc(p.name||state.user.name)}</h3><div class="muted">${esc(p.specialty||'Médico')} · ${esc(p.branch||userBranch())} · ${esc(label(p.work_status))}</div></div><div class="v74-actions"><span class="badge ok">PostgreSQL real</span><button class="btn btn-primary" data-page="appointments">Mi agenda completa</button><button class="btn btn-outline" data-page="history">Historial clínico</button></div></div><div class="v74-note"><b>Dashboard Médico real:</b> la agenda consulta únicamente las citas del médico autenticado. Usa los botones rápidos o elige un rango.</div>${kpis([{label:'Citas hoy',value:k.appointments_today||0},{label:'Atendidas hoy',value:k.attended_today||0},{label:'Consultas del mes',value:k.consultations_month||0},{label:'Pacientes del mes',value:k.patients_month||0},{label:'Resultados Lab.',value:k.lab_ready||0}])}<div class="v74-card" style="margin-bottom:14px"><div class="workflow-toolbar"><div class="left"><div class="v75-quickranges"><button class="btn btn-outline btn-sm" data-doc-range="today">Hoy</button><button class="btn btn-outline btn-sm" data-doc-range="tomorrow">Mañana</button><button class="btn btn-primary btn-sm" data-doc-range="7d">Próximos 7 días</button></div><label>Desde<input id="docAgendaFrom" type="date" value="${today}"></label><label>Hasta<input id="docAgendaTo" type="date" value="${weekEnd}"></label></div><div class="right"><span id="docAgendaCount" class="badge info">Consultando…</span></div></div><div id="docWeekAgenda">${loading('Consultando agenda...')}</div></div><div class="v74-grid"><div class="v74-card"><h3>Próxima atención</h3>${next?`<div class="v74-item"><b>${esc(next.fecha)} · ${esc(next.time)}</b><small>${esc(next.patient)} · ${esc(next.reason||'Consulta')}</small></div>`:'<div class="notice">Sin citas pendientes.</div>'}</div><div class="v74-card"><h3>Laboratorio listo</h3><div class="v74-stack">${labs.length?labs.slice(0,6).map(x=>`<div class="v74-item"><b>${esc(x.patient)} · ${esc(x.test)}</b><small>${esc(x.occurred_at)} · ${esc(label(x.status))}</small></div>`).join(''):'<div class="notice">Sin resultados listos.</div>'}</div></div></div>`;
+
+      const renderRange=async()=>{
+        const from=q('#docAgendaFrom')?.value||today,to=q('#docAgendaTo')?.value||weekEnd,box=q('#docWeekAgenda'),count=q('#docAgendaCount');
+        if(!box)return;
+        if(to<from){box.innerHTML='<div class="notice">La fecha Hasta no puede ser anterior a Desde.</div>';return}
+        box.innerHTML=loading('Consultando tus citas en PostgreSQL...');
+        try{
+          const rows=await NovaAPI.staffAppointments({doctor:state.user.staffCode,from,to,limit:1000});
+          if(count)count.textContent=`${rows.length.toLocaleString('es-PE')} cita(s)`;
+          const days=[];let cur=from,guard=0;while(cur<=to&&guard<31){days.push(cur);cur=addDaysISO(cur,1);guard++}
+          if(days.length<=14){
+            box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(${days.length},minmax(210px,1fr));gap:10px;overflow-x:auto;padding-bottom:8px">${days.map(day=>{const dr=rows.filter(a=>String(a.fecha)===day).sort((a,b)=>String(a.hora).localeCompare(String(b.hora)));return `<div class="v74-card" style="padding:12px;min-height:180px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:9px"><b style="text-transform:capitalize">${esc(dayLabel(day))}</b><span class="badge info">${dr.length}</span></div><div style="display:flex;flex-direction:column;gap:7px;max-height:360px;overflow:auto">${dr.length?dr.map(a=>`<div class="v74-item"><b>${esc(a.hora)} · ${esc(a.patient)}</b><small>DNI ${esc(a.patient_dni)} · ${esc(a.reason||'Consulta')}</small><div style="margin-top:5px">${doctorStatus(a.status)}</div></div>`).join(''):'<small class="muted">Sin citas</small>'}</div></div>`}).join('')}</div>`;
+          }else{
+            box.innerHTML=rows.length?rowTable(['Fecha','Hora','Paciente','DNI','Motivo','Estado'],rows.sort((a,b)=>(String(a.fecha)+String(a.hora)).localeCompare(String(b.fecha)+String(b.hora))).map(a=>[esc(a.fecha),esc(a.hora),esc(a.patient),esc(a.patient_dni),esc(a.reason||'—'),doctorStatus(a.status)])):'<div class="notice">No hay citas en el rango seleccionado.</div>';
+          }
+        }catch(e){box.innerHTML=errBox(e);if(count)count.textContent='Error'}
+      };
+
+      q('#docAgendaFrom').onchange=renderRange;q('#docAgendaTo').onchange=renderRange;
+      c.querySelectorAll('[data-doc-range]').forEach(btn=>btn.onclick=()=>{
+        const mode=btn.dataset.docRange;
+        if(mode==='today'){q('#docAgendaFrom').value=today;q('#docAgendaTo').value=today}
+        if(mode==='tomorrow'){const t=addDaysISO(today,1);q('#docAgendaFrom').value=t;q('#docAgendaTo').value=t}
+        if(mode==='7d'){q('#docAgendaFrom').value=today;q('#docAgendaTo').value=weekEnd}
+        c.querySelectorAll('[data-doc-range]').forEach(b=>b.classList.remove('btn-primary'));c.querySelectorAll('[data-doc-range]').forEach(b=>b.classList.add('btn-outline'));btn.classList.remove('btn-outline');btn.classList.add('btn-primary');renderRange();
+      });
+      await renderRange();
     }catch(e){c.innerHTML=errBox(e)}
   }
 
