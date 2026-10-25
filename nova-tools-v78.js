@@ -2,6 +2,8 @@
    Reutiliza RPC existentes; no crea tablas ni envía mensajes externos. */
 (function(){
 'use strict';
+// El script de acabado 7.5 aún modifica document.title durante la carga.
+if(document.title.includes('v7.5'))document.title='Clínica Nova Salud · v7.8';
 if(document.getElementById('novaNoticeButton'))return;
 const app=document.getElementById('appView'),top=app?.querySelector('.topright');
 if(!app||!top)return;
