@@ -139,6 +139,29 @@
       if(error)throw error;return data;
     },
 
+    // ---------------- Autogestión del paciente · v7.6 ----------------
+    // Requiere ejecutar sql/48_Portal_Paciente_Autogestion_v76.sql en Supabase.
+    async cancelPatientAppointment(code){
+      const {data,error}=await this.client.rpc('api_paciente_cancelar_cita',{p_cita_code:code});
+      if(error)throw error;return data;
+    },
+    async reschedulePatientAppointment({code,doctorCode,branch,date,hour}){
+      const {data,error}=await this.client.rpc('api_paciente_reprogramar_cita',{
+        p_cita_code:code,p_medico_code:doctorCode,p_sede:branch,p_fecha:date,p_hora:hour
+      });
+      if(error)throw error;return data;
+    },
+    async whatsAppPreferences(){
+      const {data,error}=await this.client.rpc('api_paciente_whatsapp_preferencias');
+      if(error)throw error;return data||{numero:'',autorizado:false};
+    },
+    async saveWhatsAppPreferences(number,authorized){
+      const {data,error}=await this.client.rpc('api_paciente_whatsapp_guardar',{
+        p_numero:number,p_autorizado:!!authorized
+      });
+      if(error)throw error;return data;
+    },
+
     // ---------------- Historial clínico real ----------------
     async staffHistory({search='',branch='',doctor='',limit=200}={}){
       const {data,error}=await this.client.rpc('api_staff_listar_historial',{
