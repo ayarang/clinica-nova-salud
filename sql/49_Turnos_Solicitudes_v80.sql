@@ -99,7 +99,7 @@ BEGIN
  SELECT * INTO v_cita FROM public.cita WHERE codigo_cita=trim(p_codigo_cita) FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'No se encontró la cita'; END IF;
  SELECT nombre,distrito INTO v_name,v_dist FROM public.sede WHERE id_sede=v_cita.id_sede;
- IF v_rol<>'gerencia' AND NOT (v_sede=v_name OR v_sede=v_dist) THEN RAISE EXCEPTION 'Cita de otra sede'; END IF;
+ IF v_rol<>'gerencia' AND NOT (COALESCE(v_sede=v_name,false) OR COALESCE(v_sede=v_dist,false)) THEN RAISE EXCEPTION 'Cita de otra sede'; END IF;
  IF v_cita.fecha<>(now() AT TIME ZONE 'America/Lima')::date THEN
   RAISE EXCEPTION 'Solo se registran llegadas para citas de hoy';
  END IF;
@@ -127,7 +127,7 @@ BEGIN
  SELECT c.fecha,s.nombre,s.distrito,c.id_medico INTO v_fecha,v_name,v_dist,v_med
  FROM public.cita c JOIN public.sede s ON s.id_sede=c.id_sede WHERE c.id_cita=v_turno.id_cita;
  IF v_fecha<>(now() AT TIME ZONE 'America/Lima')::date THEN RAISE EXCEPTION 'Solo se gestiona la atención de hoy'; END IF;
- IF v_rol<>'gerencia' AND NOT (v_sede=v_name OR v_sede=v_dist) THEN RAISE EXCEPTION 'Turno de otra sede'; END IF;
+ IF v_rol<>'gerencia' AND NOT (COALESCE(v_sede=v_name,false) OR COALESCE(v_sede=v_dist,false)) THEN RAISE EXCEPTION 'Turno de otra sede'; END IF;
  IF v_rol='medico' AND NOT EXISTS(
    SELECT 1 FROM public.personal WHERE id_personal=v_med AND codigo_personal=v_staff
  ) THEN RAISE EXCEPTION 'El turno pertenece a otro médico'; END IF;
@@ -183,7 +183,7 @@ BEGIN
  IF v_rol NOT IN ('almacen','gerencia') THEN RAISE EXCEPTION 'Solo Almacén o Gerencia revisan solicitudes'; END IF;
  SELECT * INTO v_row FROM public.nova_v80_solicitud_insumo WHERE id_solicitud=p_id FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Solicitud no encontrada'; END IF;
- IF v_rol<>'gerencia' AND v_sede<>v_row.sede THEN RAISE EXCEPTION 'Solicitud de otra sede'; END IF;
+ IF v_rol<>'gerencia' AND NOT COALESCE(v_sede=v_row.sede,false) THEN RAISE EXCEPTION 'Solicitud de otra sede'; END IF;
  IF NOT ((v_row.estado='PENDIENTE' AND p_estado IN('APROBADA','RECHAZADA'))
   OR (v_row.estado='APROBADA' AND p_estado='ENTREGADA')) THEN
     RAISE EXCEPTION 'Transición de solicitud no permitida';
