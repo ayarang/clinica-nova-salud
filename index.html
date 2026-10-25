@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Clínica Nova Salud · v7.5 FINAL</title>
+<title>Clínica Nova Salud · v7.6</title>
 <style>
 :root{--ink:#17324a;--muted:#667c8b;--primary:#2f7fa7;--primary2:#5aa8c7;--soft:#eef7fb;--line:#dce9ef;--nav:#173b57;--ok:#1f8d65;--warn:#b7791f;--danger:#b84b4b;--shadow:0 18px 50px rgba(23,59,87,.12)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--ink);background:#fff}button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}.container{width:min(1180px,calc(100% - 34px));margin:auto}.muted{color:var(--muted)}
@@ -68,6 +68,63 @@
 }
 @media(max-width:460px){
   #maintenanceView .countdown{grid-template-columns:1fr}
+}
+</style>
+
+<style id="nova-patient-v76-style">
+/* Portal del paciente · actualización incremental v7.6 */
+.v76-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;
+  flex-wrap:wrap;padding:22px 25px;border-radius:20px;margin-bottom:16px;
+  background:linear-gradient(125deg,#e9f8fb 0%,#f7fbff 68%,#fff 100%);
+  border:1px solid #d4ebf0}
+.v76-heading h3{font-size:1.55rem;letter-spacing:-.035em;color:#173b57;margin:8px 0 6px}
+.v76-heading p{font-size:.9rem;color:#526d7d;line-height:1.55;margin:0}
+.v76-top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.v76-note{background:#f1f8fc;color:#41677b;border:1px solid #d6e8ef;
+  border-radius:13px;padding:12px 15px;font-size:.82rem;line-height:1.55;margin:12px 0}
+.v76-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.v76-summary>div{background:#fff;border:1px solid var(--line);border-radius:15px;padding:17px}
+.v76-summary span{font-size:.8rem;color:var(--muted);display:block}
+.v76-summary strong{font-size:1.8rem;color:#214d68;display:block;margin-top:4px}
+.v76-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:13px}
+.v76-appointment{border:1px solid #dce9ef;border-radius:18px;background:#fff;padding:20px;
+  box-shadow:0 8px 25px rgba(20,55,77,.035);transition:transform .18s,box-shadow .18s}
+.v76-appointment:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(20,55,77,.07)}
+.v76-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.v76-card-top small{color:#668092;font-size:.75rem}
+.v76-card-top h4{font-size:1.08rem;margin:7px 0 4px;color:#173b57}
+.v76-card-top p{color:var(--muted);font-size:.85rem;margin:0}
+.v76-status{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;
+  font-size:.72rem;font-weight:800;flex-shrink:0}
+.v76-status.programada{background:#e5f3fb;color:#126285}
+.v76-status.cancelada{background:#fff0ef;color:#ae3a43}
+.v76-status.realizada{background:#eaf8f0;color:#16704b}
+.v76-card-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:.82rem;color:#3e6278;margin:18px 0}
+.v76-card-meta span{background:#f4f9fc;padding:7px 9px;border-radius:9px}
+.v76-card-actions{border-top:1px solid #eef3f6;padding-top:14px;display:flex;gap:9px;flex-wrap:wrap;align-items:center;min-height:50px}
+.v76-card-actions>.muted{font-size:.78rem}
+.v76-cancel{color:#ad4650;border-color:#f1d5d7}
+.v76-cancel:hover{background:#fff2f2}
+.v76-notices{margin-top:20px;border:1px solid var(--line);background:#fff;padding:18px;border-radius:18px}
+.v76-section-title{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.v76-section-title h3{font-size:1.04rem;margin:0 0 12px}
+.v76-notice{display:flex;gap:12px;padding:12px 0;border-top:1px solid #edf3f7}
+.v76-notice-icon{background:#eaf6fa;display:grid;place-items:center;width:35px;height:35px;
+  border-radius:11px;flex:0 0 35px}
+.v76-notice b{font-size:.9rem}
+.v76-notice p{font-size:.82rem;line-height:1.5;color:#536d7e;margin:5px 0}
+.v76-notice small{font-size:.72rem;color:#8a9dab}
+.v76-modal-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:18px}
+@media(max-width:700px){
+  .v76-heading{padding:18px}
+  .v76-top-actions{width:100%}
+  .v76-top-actions .btn{flex:1}
+  .v76-summary{gap:8px}
+  .v76-summary>div{padding:12px}
+  .v76-summary strong{font-size:1.35rem}
+  .v76-list{grid-template-columns:minmax(0,1fr)}
+  .v76-appointment{padding:16px}
+  .v76-modal-actions .btn{flex:1}
 }
 </style>
 </head>
@@ -246,6 +303,7 @@ function invoiceLines(inv){if(Array.isArray(inv.items)&&inv.items.length)return 
 function showInvoiceReceipt(invOrCode){const inv=typeof invOrCode==='string'?demo.invoices.find(x=>x.code===invOrCode):invOrCode;if(!inv){showToast('No se encontró el comprobante');return}const p=invoicePatient(inv),lines=invoiceLines(inv);modal(`<span class="eyebrow">Facturación Nova Salud</span><h2>Comprobante ${inv.code}</h2><div class="receipt"><div class="receipt-head"><div><b>Clínica Nova Salud</b><div class="muted">Sede ${inv.branch}</div></div><div style="text-align:right"><b>${inv.status}</b><div class="muted">${inv.date} · ${inv.time||'—'}</div></div></div><div class="receipt-grid"><div><small class="muted">Paciente</small><br><b>${p.name}</b></div><div><small class="muted">DNI</small><br><b>${p.dni}</b></div><div><small class="muted">Código</small><br>${p.code}</div><div><small class="muted">Seguro</small><br>${p.insurance||'Particular'}</div><div><small class="muted">Método de pago</small><br>${inv.method}</div><div><small class="muted">Sede</small><br>${inv.branch}</div></div>${rowTable(['Concepto','Cant.','P. unitario','Importe'],lines.map(x=>[x.description,x.qty,money(x.unitPrice),money(x.total)]))}<div class="invoice-total"><span>Total</span><strong>${money(inv.total)}</strong></div></div><div class="receipt-actions"><button class="btn btn-outline" data-print-invoice-code="${inv.code}">🖨 Imprimir / Guardar PDF</button><button class="btn btn-primary" data-action="new-invoice">+ Nueva factura</button></div>`)}
 function printInvoice(code){const inv=demo.invoices.find(x=>x.code===code);if(!inv)return;const p=invoicePatient(inv),lines=invoiceLines(inv),w=window.open('','_blank','width=850,height=900');if(!w){showToast('El navegador bloqueó la ventana de impresión');return}w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${inv.code}</title><style>body{font-family:Arial,sans-serif;color:#17324a;padding:34px}h1{font-size:24px;margin:0}small{color:#657985}.head{display:flex;justify-content:space-between;border-bottom:2px solid #2f7fa7;padding-bottom:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 25px;margin:20px 0}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{padding:10px;border-bottom:1px solid #dce9ef;text-align:left}th{background:#eef7fb}.total{text-align:right;font-size:22px;font-weight:bold;margin-top:20px}.foot{margin-top:28px;font-size:12px;color:#667c8b}@media print{button{display:none}}</style></head><body><div class="head"><div><h1>Clínica Nova Salud</h1><small>Sede ${inv.branch}</small></div><div style="text-align:right"><b>${inv.code}</b><br><small>${inv.date} · ${inv.time||'—'}</small></div></div><div class="grid"><div><small>Paciente</small><br><b>${p.name}</b></div><div><small>DNI</small><br><b>${p.dni}</b></div><div><small>Código paciente</small><br>${p.code}</div><div><small>Método</small><br>${inv.method}</div></div><table><thead><tr><th>Concepto</th><th>Cant.</th><th>P. unitario</th><th>Importe</th></tr></thead><tbody>${lines.map(x=>`<tr><td>${x.description}</td><td>${x.qty}</td><td>${money(x.unitPrice)}</td><td>${money(x.total)}</td></tr>`).join('')}</tbody></table><div class="total">TOTAL: ${money(inv.total)}</div><div class="foot">Prototipo académico · comprobante ficticio. En el diálogo de impresión selecciona “Guardar como PDF” para obtener un PDF.</div><script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>
 
+<script src="nova-patient-v76.js?v=7.6"></script>
 </body></html>`);w.document.close()}
 function renderBilling(c){const global=state.role==='gerencia',defaultBranch=global?'Todas las sedes':userBranch();c.innerHTML=`<div class="toolbar"><div class="left"><input id="billSearch" placeholder="DNI, paciente o comprobante"><select id="billBranch" ${global?'':'disabled'}>${branchOptions(true)}</select><select id="billMethod"><option>Todos los métodos</option><option>Yape</option><option>Efectivo</option><option>Tarjeta de débito</option><option>Tarjeta de crédito</option><option>Depósito</option></select></div>${actionAllowed('new-invoice')?'<button class="btn btn-primary" data-action="new-invoice">+ Nueva factura</button>':''}</div><div id="billingTable"></div>`;$('#billBranch').value=defaultBranch;const update=()=>{const q=norm($('#billSearch').value),digits=$('#billSearch').value.replace(/\D/g,''),b=$('#billBranch').value,m=$('#billMethod').value;const rows=demo.invoices.filter(x=>{const p=invoicePatient(x),hay=`${x.code} ${p.code} ${p.dni} ${p.name}`;return(b==='Todas las sedes'||x.branch===b)&&(m==='Todos los métodos'||x.method===m)&&(!q||norm(hay).includes(q)||(digits&&String(p.dni).includes(digits)))}).sort((a,b)=>`${b.date} ${b.time||''}`.localeCompare(`${a.date} ${a.time||''}`));$('#billingTable').innerHTML=pagedTable(['Comprobante','Fecha / hora','DNI','Paciente','Sede','Total','Método','Estado','Acción'],rows.map(x=>{const p=invoicePatient(x);return[x.code,`${x.date}<br><small>${x.time||'—'}</small>`,p.dni,p.name,x.branch,money(x.total),x.method,`<span class="badge ${x.status==='Pagado'?'ok':'warn'}">${x.status}</span>`,`<button class="btn btn-outline btn-sm" data-invoice-code="${x.code}">Ver / imprimir</button>`]}),'billing',25)};$('#billSearch').oninput=()=>{state.pageState.billing=1;update()};$('#billBranch').onchange=()=>{state.pageState.billing=1;update()};$('#billMethod').onchange=()=>{state.pageState.billing=1;update()};update()}
 function renderInventory(c){const global=state.role==='gerencia',defaultBranch=global?'Todas las sedes':userBranch();c.innerHTML=`<div class="toolbar"><div class="left"><input id="invSearch" placeholder="Buscar producto"><select id="invBranch" ${global?'':'disabled'}>${branchOptions(true)}</select><select id="invWarehouse"><option>Todos los almacenes</option>${warehouses.map(w=>`<option>${w.name}</option>`).join('')}</select></div><div class="right">${actionAllowed('movement')?'<button class="btn btn-outline" data-action="movement">Registrar movimiento</button>':''}${actionAllowed('new-product')?'<button class="btn btn-primary" data-action="new-product">+ Nuevo producto</button>':''}</div></div><div id="inventoryTable"></div>`;$('#invBranch').value=defaultBranch;const update=()=>{const q=$('#invSearch').value.toLowerCase(),b=$('#invBranch').value,w=$('#invWarehouse').value;let rows=demo.stock.filter(p=>(b==='Todas las sedes'||p.branch===b)&&(w==='Todos los almacenes'||p.warehouse===w)&&p.product.toLowerCase().includes(q));if(!global)rows=rows.filter(p=>p.branch===userBranch());$('#inventoryTable').innerHTML=rowTable(['Producto','Almacén','Sede','Lote','Vence','Stock','Mínimo','Precio','Estado'],rows.map(p=>[p.product,p.warehouse,p.branch,p.batch,p.expiry,p.qty,p.min,money(p.price),p.qty<=p.min?'<span class="badge danger">Crítico</span>':'<span class="badge ok">Disponible</span>']))};$('#invSearch').oninput=update;$('#invBranch').onchange=update;$('#invWarehouse').onchange=update;update()}
