@@ -3,7 +3,28 @@
 (function () {
   'use strict';
   const footer = document.querySelector('footer#contacto');
-  if (!footer || document.getElementById('novaSocialSection')) return;
+  if (!footer) return;
+  // Si el pie de página ya contiene los iconos en HTML, solo activamos copiar.
+  // Así siguen visibles incluso cuando un JavaScript no carga.
+  const staticSection = document.getElementById('novaSocialSection');
+  if (staticSection) {
+    const copyButton = staticSection.querySelector('.nova-social-copy');
+    if(copyButton) copyButton.addEventListener('click', async function(){
+      const url='https://ayarang.github.io/clinica-nova-salud/';
+      try {
+        await navigator.clipboard.writeText(url);
+        copyButton.textContent='✓ Copiado';
+      } catch (_) {
+        const field=document.createElement('textarea');field.value=url;
+        field.style.position='fixed';field.style.opacity='0';
+        document.body.append(field);field.select();
+        const success=document.execCommand('copy');field.remove();
+        copyButton.textContent=success?'✓ Copiado':'Copia desde tu navegador';
+      }
+      setTimeout(function(){copyButton.textContent='⧉ Copiar enlace';},1900);
+    });
+    return;
+  }
 
   const pageUrl = 'https://ayarang.github.io/clinica-nova-salud/';
   const shareText = 'Conoce Clínica Nova Salud, una demostración académica de gestión clínica.';
