@@ -3,6 +3,7 @@
    Sin credenciales, sin bypass de RLS, sin simulaciones presentadas como datos reales. */
 (function(){
 'use strict';
+document.title='Clínica Nova Salud · v8.0';
 if(document.getElementById('novaV80Drawer'))return;
 const app=document.getElementById('appView'),publicPage=document.getElementById('publicView');
 if(!app||!publicPage)return;
@@ -94,7 +95,9 @@ css.textContent=[
 '.nova-v80-hero:hover{background:#ffffff3f}',
 '@media(max-width:610px){.nova-v80-content{padding:13px}.nova-v80-head{padding:13px 15px}',
 '.nova-v80-showcase{padding:17px}.nova-v80-action{padding:8px 9px;font-size:11px}',
-'#appView .topright .nova-v80-action{height:39px;min-height:39px}}'
+'#appView .topright .nova-v80-action{height:39px;min-height:39px;padding:8px;min-width:39px;justify-content:center}',
+'.nova-v80-label{display:none!important}',
+'#appView .topright .nova-v80-expo-head{display:none!important}}'
 ].join('');
 document.head.append(css);
 const shade=document.createElement('div');shade.className='nova-v80-scrim';
@@ -287,7 +290,9 @@ async function showInsumos(){
 const top=app.querySelector('.topright');
 const headerButtons=[];
 function addHeader(name,icon,text,roles){
- const b=element('button','nova-v80-action',icon+' '+text);
+ const b=element('button','nova-v80-action');
+ b.append(element('span','nova-v80-icon',icon),element('span','nova-v80-label',text));
+ if(name==='expo')b.classList.add('nova-v80-expo-head');
  b.type='button';b.title=text;b.setAttribute('aria-label',text);
  top.insertBefore(b,top.firstChild);
  b.onclick=()=>open(name);
