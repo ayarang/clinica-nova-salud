@@ -171,7 +171,8 @@
           <button type="submit" class="btn btn-primary">Guardar preferencia</button></div>
       </form>`,true);
     const form=$v('v76WhatsappForm'),phone=$v('v76Phone'),check=$v('v76Consent');
-    phone.value=(state.user?.patient?.phone||'').replace(/[\s()-]/g,'');
+    const savedPhone=String(state.user?.patient?.phone||'').replace(/[\s()-]/g,'');
+    phone.value=/^9[0-9]{8}$/.test(savedPhone)?'+51'+savedPhone:savedPhone;
     try{
       const p=await api().whatsAppPreferences();
       if(!form.isConnected)return;
