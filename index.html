@@ -1135,6 +1135,13 @@ document.addEventListener('click',e=>{
 
 <style id="nova-v65-css">
 .v65-clinical-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}.v65-clinical-actions{display:flex;gap:8px;flex-wrap:wrap}.v65-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}.v65-summary>div{background:#f7fbfd;border:1px solid var(--line);border-radius:13px;padding:13px}.v65-summary small,.v65-summary b{display:block}.v65-summary b{font-size:1.25rem;margin-top:4px}.v65-timeline{display:flex;flex-direction:column;gap:10px;margin-top:14px}.v65-event{border:1px solid var(--line);border-left:4px solid #2f7fa7;border-radius:13px;padding:13px;background:#fff}.v65-event.rx{border-left-color:#1f8d65}.v65-event .meta{font-size:.75rem;color:var(--muted);margin-bottom:5px}.v65-event .actions{margin-top:9px}.v65-allergy-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.v65-prescription-alert{margin-top:10px}.v65-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.v65-real-note{background:#edf8fb;border:1px solid #cce8f1;border-radius:13px;padding:12px 14px;color:#365f74;margin-bottom:14px}
+#historyTable .tablewrap{max-height:min(65vh,620px);overflow:auto!important;scrollbar-gutter:stable both-edges;border:1px solid var(--line);border-radius:14px;background:#fff}
+#historyTable .table{min-width:1180px;margin:0}
+#historyTable .table thead th{position:sticky;top:0;z-index:5;background:#fff;box-shadow:0 1px 0 #dfe9ee}
+#historyTable .tablewrap::-webkit-scrollbar{height:13px;width:11px}
+#historyTable .tablewrap::-webkit-scrollbar-track{background:#edf4f7;border-radius:999px}
+#historyTable .tablewrap::-webkit-scrollbar-thumb{background:#75a9be;border-radius:999px;border:2px solid #edf4f7}
+#historyTable .tablewrap::-webkit-scrollbar-thumb:hover{background:#4f8ca7}
 @media(max-width:800px){.v65-summary,.v65-two{grid-template-columns:1fr}}
 </style>
 <script id="nova-v65-historial-clinico">
