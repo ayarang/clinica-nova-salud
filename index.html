@@ -271,26 +271,17 @@ function seedDemo(){
  return {staff,accounts,patients,appointments,histories,products,stock,invoices,movements,audit,support,consents:[]};
 }
 const demo=seedDemo();
-// Persistencia local SOLO para esta demo académica: permite que una cuenta creada siga funcionando tras recargar el HTML.
-// En producción, la contraseña jamás debe guardarse en el navegador; debe validarse en backend con hash seguro.
-const DEMO_PATIENT_ACCOUNTS_KEY='nova_salud_demo_patient_accounts_v59';
-function restoreDemoPatientAccounts(){
- try{
-  const saved=JSON.parse(localStorage.getItem(DEMO_PATIENT_ACCOUNTS_KEY)||'[]');
-  if(!Array.isArray(saved))return;
-  for(const p of saved){if(p&&p.dni&&!demo.patients.some(x=>x.dni===p.dni))demo.patients.push(p)}
- }catch(e){console.warn('No se pudieron restaurar cuentas demo',e)}
+// Los datos y credenciales demo solo viven en memoria durante esta visita.
+// Limpiar los perfiles y recetas que una versión anterior dejó en localStorage.
+for (const storageKey of [
+  'nova_salud_demo_patient_accounts_v59',
+  'nova_salud_demo_notifications_v60',
+  'nova_salud_prescriptions_v61'
+]) {
+  try { localStorage.removeItem(storageKey); } catch (_e) {}
 }
-function persistDemoPatientAccount(p){
- try{
-  const saved=JSON.parse(localStorage.getItem(DEMO_PATIENT_ACCOUNTS_KEY)||'[]');
-  const list=Array.isArray(saved)?saved:[];
-  const idx=list.findIndex(x=>x.dni===p.dni);
-  if(idx>=0)list[idx]=p;else list.push(p);
-  localStorage.setItem(DEMO_PATIENT_ACCOUNTS_KEY,JSON.stringify(list));
- }catch(e){console.warn('No se pudo guardar la cuenta demo',e)}
-}
-restoreDemoPatientAccounts();
+// Se mantienen las llamadas anteriores sin persistir información sensible.
+function persistDemoPatientAccount() {}
 const state={role:null,user:null,page:'dashboard',dashboardPeriod:'current_month',dashboardBranch:'Todas las sedes',dashboardDoctor:'Todos los médicos',pageState:{}};
 function can(page){return !!state.role&&(perms[state.role]||[]).includes(page)}
 function actionAllowed(action){return !actionRoles[action]||(actionRoles[action]||[]).includes(state.role)}
@@ -721,9 +712,8 @@ document.addEventListener('click',e=>{
  branches.forEach((b,bi)=>{for(let k=0;k<3;k++){const identified=k!==2,p=identified?demo.patients[(bi*300+k*53+17)%demo.patients.length]:null;demo.emergencies.push({code:`EMG-${String(emgSeq++).padStart(6,'0')}`,tempCode:identified?'':`TMP-EMG-${String(emgSeq).padStart(6,'0')}`,patientCode:p?.code||'',patient:p?.name||'Paciente no identificado',dni:p?.dni||'',branch:b.name,date:TODAY,time:['07:18','13:42','19:27'][k],arrival:k===0?'Ambulancia':k===1?'Particular':'Bomberos',reason:['Accidente / trauma','Dolor agudo','Paciente encontrado sin identificación'][k],triage:['Urgente','Muy urgente','Crítico'][k],status:['En atención','Observación','En evaluación'][k],identityStatus:identified?'Identificado':'Pendiente',contactStatus:identified?'Familiar por contactar':'Por ubicar'});}});
 
  demo.patientNotifications=demo.patientNotifications||[];
- const V60_NOTIF_KEY='nova_salud_demo_notifications_v60';
- try{const savedNotes=JSON.parse(localStorage.getItem(V60_NOTIF_KEY)||'[]');if(Array.isArray(savedNotes))demo.patientNotifications.push(...savedNotes)}catch(e){}
- function persistNotificationsV60(){try{localStorage.setItem(V60_NOTIF_KEY,JSON.stringify(demo.patientNotifications.slice(0,300)))}catch(e){}}
+ // Las notificaciones ficticias se conservan solo mientras está abierta esta página.
+ function persistNotificationsV60(){}
  function notifyPatient(p,title,message,type='info'){demo.patientNotifications.unshift({id:`NOT-${Date.now()}-${Math.floor(Math.random()*1000)}`,patientCode:p.code,date:TODAY,title,message,type,read:false});persistNotificationsV60()}
  function validatePatientV60(code,action,reason=''){
    const p=demo.patients.find(x=>x.code===code);if(!p)return;
@@ -838,7 +828,7 @@ document.addEventListener('click',e=>{
  });
 
  // Historial de medicamentos recetados: se deriva de consultas ficticias y luego admite nuevos registros.
- function safeStoredRx(){try{const x=JSON.parse(localStorage.getItem(V61_RX_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}}
+ // Las recetas simuladas no se guardan en almacenamiento persistente del navegador.
  demo.prescriptions=demo.prescriptions||[];
  if(!demo.prescriptions.length){
    const meds=medicationCatalog().filter(x=>!normV61(x).includes('preservativo'));
@@ -850,8 +840,8 @@ document.addEventListener('click',e=>{
      demo.prescriptions.push({code:`REC-${String(i+1).padStart(7,'0')}`,historyCode:h.code,patientCode:h.patientCode,date:h.date,medication:med,dose:['1 tableta','5 ml','10 ml','1 cápsula'][i%4],frequency:['cada 8 horas','cada 12 horas','una vez al día'][i%3],duration:[3,5,7][i%3]+' días',doctor:h.doctor,doctorCode:h.doctorCode,branch:h.branch,notes:'Indicación ficticia para demostración académica.'});
    });
  }
- for(const rx of safeStoredRx()){if(!demo.prescriptions.some(x=>x.code===rx.code))demo.prescriptions.unshift(rx)}
- function persistRxV61(){try{localStorage.setItem(V61_RX_KEY,JSON.stringify(demo.prescriptions.filter(x=>x.userCreated)))}catch(e){}}
+ // Las recetas nuevas se mantienen únicamente en memoria durante esta visita.
+ function persistRxV61(){}
 
  function patientAllergyHtmlV61(p){return p?.allergies?.length?p.allergies.map(a=>`<span class="allergy-pill">⚠ ${escV61(a)}</span>`).join(''):'<span class="allergy-none">Sin alergias registradas</span>'}
  function medicationConflictsV61(p,med){const nm=normV61(med);return (p?.allergies||[]).filter(a=>nm.includes(normV61(a))||normV61(a).includes(nm))}
@@ -1038,7 +1028,15 @@ document.addEventListener('click',e=>{
 
   document.addEventListener('submit',async e=>{
     const id=e.target?.id;
-    if(!remoteReady()||!['staffLogin','patientLogin','patientRegister'].includes(id))return;
+    if(!['staffLogin','patientLogin','patientRegister'].includes(id))return;
+    // Nunca sustituir Auth real por credenciales demo durante una caída de Supabase.
+    if(!remoteReady()){
+      if(window.NOVA_SUPABASE?.url&&window.NOVA_SUPABASE?.publishableKey){
+        e.preventDefault();e.stopImmediatePropagation();
+        showToast('Supabase no está disponible. No se inició sesión ni se guardaron datos.');
+      }
+      return;
+    }
     e.preventDefault();e.stopImmediatePropagation();
     const form=e.target,fd=new FormData(form);
     try{
