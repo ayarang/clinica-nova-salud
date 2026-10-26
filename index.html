@@ -926,7 +926,7 @@ document.addEventListener('click',e=>{
  const oldRenderPatientAuthV61=renderPatientAuth;
  renderPatientAuth=function(mode){oldRenderPatientAuthV61(mode);if(mode!=='register')return;const form=$('#patientRegister'),privacy=form?.querySelector('.formsec:last-of-type');if(form&&privacy&&!form.querySelector('[name="allergies"]')){privacy.insertAdjacentHTML('beforebegin',`<section class="formsec"><h3>4. Alertas de salud</h3><label>Alergias a medicamentos (opcional)<input name="allergies" placeholder="Ej. Penicilina, Ibuprofeno"></label><p class="hint">Esta información será revisada por el personal clínico.</p></section>`);const headings=form.querySelectorAll('.formsec h3');headings.forEach((h,i)=>h.textContent=h.textContent.replace(/^\d+\./,(i+1)+'.'))}}
  // El listener original crea el paciente. Capturamos el valor antes y lo aplicamos después del submit.
- document.addEventListener('submit',e=>{if(e.target.id==='patientRegister'){const allergies=String(new FormData(e.target).get('allergies')||'').split(',').map(x=>x.trim()).filter(Boolean),dni=String(new FormData(e.target).get('dni')||'').trim();setTimeout(()=>{const p=demo.patients.find(x=>x.dni===dni);if(p&&allergies.length){p.allergies=allergies;persistDemoPatientAccount(p)}},0)}},true);
+ document.addEventListener('submit',e=>{if(e.target.id==='patientRegister'){const allergies=String(new FormData(e.target).get('allergies')||'').split(',').map(x=>x.trim()).filter(Boolean),dni=String(new FormData(e.target).get('dni')||'').trim();setTimeout(()=>{const p=demo.patients.find(x=>x.dni===dni);if(p&&allergies.length){p.allergies=allergies;}},0)}},true);
 
  // Pequeña mejora al logo y al estado público.
  setTimeout(applyMaintenanceV61,40);
