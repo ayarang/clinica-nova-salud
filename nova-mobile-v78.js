@@ -1,4 +1,4 @@
-/* Nova Salud v7.8 · Navegación móvil accesible.
+/* Nova Salud v8.2 · Navegación móvil accesible y zona flotante sin solapamientos.
    No altera permisos, login, ni llamadas a Supabase. */
 (function(){
   'use strict';
@@ -29,16 +29,21 @@
       #appView.app.hidden{display:none!important}
       #appView .main{width:100%!important;min-width:0!important;max-width:100vw!important;margin:0!important}
       #appView .sidebar{position:fixed!important;top:0!important;bottom:0!important;left:0!important;
-        width:min(296px,84vw)!important;height:100dvh!important;z-index:121!important;
+        width:min(296px,84vw)!important;height:100dvh!important;z-index:3301!important;
         transform:translateX(-105%);transition:transform .24s ease;box-shadow:20px 0 60px #07314542;
-        padding:17px 13px;overflow-y:auto}
+        padding:17px 13px;overflow-y:auto;display:flex!important;flex-direction:column!important}
       #appView.nova-mobile-open .sidebar{transform:translateX(0)}
       #appView .sidebar .brand span:last-child,#appView .navbtn span:last-child,
       #appView .sidebar .profile{display:block!important}
       #appView .sidebar .brand{display:flex!important}
       #appView .navbtn{width:100%;min-height:45px;gap:13px}
       #appView .sidenav{overflow:visible!important;display:flex;flex-direction:column;gap:5px;min-height:0;flex:1}
-      #appView .sidefoot{margin-top:18px}
+      #appView .sidefoot{margin-top:auto!important;padding:14px 4px calc(10px + env(safe-area-inset-bottom));
+        display:flex!important;flex-direction:column;gap:10px;position:relative;z-index:2;
+        background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.07))}
+      #appView .sidefoot .profile{padding-top:8px;border-top:1px solid rgba(255,255,255,.16)}
+      #appView .sidefoot [data-action="logout"]{width:100%;min-height:44px;padding:10px 12px;
+        border-radius:10px;text-align:left}
       #appView .top{position:sticky;z-index:19;top:0;padding:11px 14px;min-height:70px;
         display:flex;justify-content:space-between;gap:10px}
       #appView .top>div:first-child{min-width:0;flex:1}
@@ -56,9 +61,24 @@
       #appView .content .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
       #appView .content .table{min-width:500px}
       .nova-mobile-menu,.nova-mobile-close{display:inline-flex!important}
-      .nova-mobile-backdrop{position:fixed;inset:0;background:rgba(11,36,57,.53);z-index:120}
+      .nova-mobile-backdrop{position:fixed;inset:0;background:rgba(11,36,57,.53);z-index:3300}
       #appView.nova-mobile-open .nova-mobile-backdrop{display:block}
       body.nova-mobile-locked{overflow:hidden}
+      /* Mientras el menú móvil está abierto, ningún botón flotante tapa perfil o cerrar sesión. */
+      body.nova-mobile-locked .nova-assistant-trigger,
+      body.nova-mobile-locked .nova-assistant-panel,
+      body.nova-mobile-locked .nova-wa-trigger,
+      body.nova-mobile-locked #novaDbStatus{display:none!important}
+      /* Zona inferior móvil: asistente compacto a la izquierda, estado DB a la derecha,
+         WhatsApp más arriba para evitar colisiones. */
+      .nova-assistant-trigger{left:12px!important;bottom:calc(12px + env(safe-area-inset-bottom))!important;
+        width:50px!important;height:50px!important;min-width:50px!important;padding:0!important;
+        border-radius:50%!important;justify-content:center!important}
+      .nova-assistant-trigger>span{display:none!important}
+      #novaDbStatus{right:12px!important;bottom:calc(12px + env(safe-area-inset-bottom))!important;
+        max-width:48vw!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        font-size:10px!important;padding:8px 10px!important}
+      .nova-wa-trigger{right:14px!important;bottom:calc(112px + env(safe-area-inset-bottom))!important}
       .nova-mobile-menu{order:-1}
     }
     @media(max-width:540px){
