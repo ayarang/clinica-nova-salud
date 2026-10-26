@@ -10,7 +10,7 @@
       if(!window.supabase?.createClient) return {ok:false,reason:'SDK_MISSING'};
       if(!this.client){
         this.client=window.supabase.createClient(cfg.url,cfg.publishableKey,{
-          auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+          auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:true}
         });
       }
       const {data,error}=await this.client.from('sede')
