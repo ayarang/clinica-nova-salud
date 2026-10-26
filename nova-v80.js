@@ -217,8 +217,10 @@ async function showTurnos(){
     'Sede: '+String(t.sede||'—')],String(t.estado||'—').replaceAll('_',' '));
    if(canUpdateTurn.has(r)){
     const options=t.estado==='EN_ESPERA'?
-     [{state:'EN_ATENCION',label:'Iniciar atención'},{state:'ANULADO',label:'Anular turno'}]:
-     t.estado==='EN_ATENCION'?[{state:'FINALIZADO',label:'Finalizar'}]:[];
+     (r==='recepcion'?[{state:'ANULADO',label:'Anular turno'}]:
+      r==='medico'?[{state:'EN_ATENCION',label:'Iniciar atención'}]:
+      [{state:'EN_ATENCION',label:'Iniciar atención'},{state:'ANULADO',label:'Anular turno'}]):
+     t.estado==='EN_ATENCION'&&r!=='recepcion'?[{state:'FINALIZADO',label:'Finalizar'}]:[];
     if(options.length){
      const row=element('div','nova-v80-controls');
      options.forEach(o=>row.append(button(o.label,async()=>{

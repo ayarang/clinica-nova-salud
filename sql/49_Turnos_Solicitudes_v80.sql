@@ -132,6 +132,14 @@ BEGIN
    SELECT 1 FROM public.personal WHERE id_personal=v_med AND codigo_personal=v_staff
  ) THEN RAISE EXCEPTION 'El turno pertenece a otro médico'; END IF;
  v_actual:=v_turno.estado;
+ -- Recepción gestiona la llegada y puede anular la espera, pero no prestar atención médica.
+ IF v_rol='recepcion' AND p_estado<>'ANULADO' THEN
+   RAISE EXCEPTION 'Recepción no puede iniciar ni finalizar una atención';
+ END IF;
+ -- El médico asignado inicia o finaliza la atención; Gerencia conserva supervisión.
+ IF v_rol='medico' AND p_estado='ANULADO' THEN
+   RAISE EXCEPTION 'Solo Recepción o Gerencia pueden anular turnos';
+ END IF;
  IF NOT ((v_actual='EN_ESPERA' AND p_estado IN ('EN_ATENCION','ANULADO'))
    OR(v_actual='EN_ATENCION' AND p_estado='FINALIZADO')) THEN
    RAISE EXCEPTION 'Transición de turno no permitida';
