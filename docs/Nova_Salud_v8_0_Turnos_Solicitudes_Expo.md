@@ -26,7 +26,7 @@ La migración **48** sigue siendo un paso independiente para cancelar/reprograma
 | Rol | Turnos | Solicitudes |
 |---|---|---|
 | Paciente | Ver sus turnos de hoy | No disponible |
-| Recepción | Registrar llegadas y actualizar turnos de su sede | No disponible |
+| Recepción | Registrar llegadas y **anular turnos en espera** de su sede; no iniciar ni finalizar atenciones | No disponible |
 | Médico | Ver sus turnos asignados, iniciar/finalizar; no registrar llegadas | Solicitar productos y consultar sus propias solicitudes |
 | Enfermería | Consultar turnos autorizados de la sede | Solicitar productos y consultar sus propias solicitudes |
 | Almacén | No disponible | Revisar y actualizar solicitudes de su sede |
@@ -40,7 +40,8 @@ La migración **48** sigue siendo un paso independiente para cancelar/reprograma
 - Desde la portada pública, pulsa «🎓 Ver recorrido». Recorre los 6 pasos, vuelve al inicio y cierra el panel.
 - Desde celular entra con usuario de prueba paciente, revisa que exista 🎫 «Turnos» y que no se muestren turnos de otros pacientes.
 - Inicia sesión con cuenta ficticia Recepción, registra llegada de una cita de **hoy** (realizada para la prueba), confirma que aparece «En espera»; prueba que una cita de mañana se rechace.
-- Inicia sesión con Médico asignado a la cita de prueba: inicia y finaliza la atención. Verifica que un médico diferente no pueda modificar el turno.
+- Con Recepción, comprueba que solo pueda registrar y anular turnos en espera, pero **no** iniciar/finalizar una atención, incluso invocando directamente `api_v80_turno_estado`.
+- Inicia sesión con Médico asignado a la cita de prueba: inicia y finaliza la atención. Verifica que un médico diferente no pueda modificar el turno y que Médico no pueda anularlo.
 - Con Enfermería de prueba crea solicitud de 3 cajas de guantes sin datos clínicos, luego accede a Almacén de esa sede para aprobar y marcar entregada. Comprueba que el stock **no disminuye** automáticamente y registra la salida en Inventario.
 - Comprueba que Caja y Sistemas no accedan a los nuevos botones.
 - Verifica que Registro de pacientes, Acceso del personal, Asistente Nova y los módulos de v7.8 sigan funcionando.
@@ -49,5 +50,5 @@ La migración **48** sigue siendo un paso independiente para cancelar/reprograma
 
 - No se realizan mensajes reales de WhatsApp, notificaciones push, diagnósticos ni tratamientos.
 - El modo exposición es una **simulación aislada** para mostrar la secuencia al profesor. No equivale a ejecutar una transacción en base de datos.
-- La nueva migración debe revisarse contra el esquema de Supabase actual. No se ha ejecutado en la base real desde GitHub.
+- GitHub Pages no aplica migraciones automáticamente. Una modificación del script SQL en GitHub **no actualiza** las funciones de la base ya desplegada. Reaplicar la versión revisada del script únicamente tras respaldo/verificación del esquema y probar sus permisos en una base de pruebas.
 - Para ambientes reales se recomienda agregar log de auditoría detallado para cambios de estado, y revisar permisos, retención de datos, pruebas de concurrencia y políticas institucionales.
