@@ -2,6 +2,22 @@
 // Auth real + pacientes + citas + historial clínico + laboratorio real + enfermería + facturación/caja real + inventario real + dashboard/auditoría real.
 (function(){
   const cfg = window.NOVA_SUPABASE;
+  const readCache=new Map();
+  function cacheKey(scope,args){return scope+':'+JSON.stringify(args||{})}
+  function clearReadCache(prefix=''){
+    if(!prefix){readCache.clear();return}
+    for(const key of readCache.keys())if(key.startsWith(prefix))readCache.delete(key);
+  }
+  async function cachedRead(scope,args,ttlMs,loader){
+    const key=cacheKey(scope,args),now=Date.now(),hit=readCache.get(key);
+    if(hit&&hit.value!==undefined&&hit.expires>now)return hit.value;
+    if(hit?.promise)return hit.promise;
+    const promise=Promise.resolve().then(loader).then(value=>{
+      readCache.set(key,{value,expires:Date.now()+ttlMs});return value;
+    }).catch(err=>{readCache.delete(key);throw err});
+    readCache.set(key,{promise,expires:now+ttlMs});
+    return promise;
+  }
   const api = {
     enabled:false,
     client:null,
@@ -18,12 +34,15 @@
         .eq('estado','ACTIVA').order('id_sede').limit(5);
       if(error)return {ok:false,reason:error.message};
       this.enabled=true;
+      readCache.set(cacheKey('sedes',{}),{value:data||[],expires:Date.now()+300000});
       return {ok:true,sedes:data};
     },
     async sedes(){
       if(!this.client)await this.init();
-      const {data,error}=await this.client.from('sede').select('*').eq('estado','ACTIVA').order('id_sede');
-      if(error)throw error; return data||[];
+      return cachedRead('sedes',{},300000,async()=>{
+        const {data,error}=await this.client.from('sede').select('*').eq('estado','ACTIVA').order('id_sede');
+        if(error)throw error; return data||[];
+      });
     },
     async session(){
       if(!this.client)return null;
@@ -32,6 +51,7 @@
     },
     async signInStaff(email,password){
       if(!this.client)await this.init();
+      clearReadCache();
       const {error}=await this.client.auth.signInWithPassword({email,password});
       if(error)throw error;
       const {data,error:profileError}=await this.client.rpc('mi_perfil_staff');
@@ -41,6 +61,7 @@
     },
     async signInPatient(email,password){
       if(!this.client)await this.init();
+      clearReadCache();
       const {error}=await this.client.auth.signInWithPassword({email,password});
       if(error)throw error;
       const {data,error:profileError}=await this.client.rpc('mi_perfil_paciente');
@@ -80,7 +101,7 @@
       try{const patient=await this.patientProfile();if(patient)return patient}catch(_e){}
       return null;
     },
-    async signOut(){if(this.client)await this.client.auth.signOut();},
+    async signOut(){clearReadCache();if(this.client)await this.client.auth.signOut();},
     async patientNotifications(){
       const {data,error}=await this.client.from('notificacion_paciente').select('*').order('fecha_hora',{ascending:false}).limit(20);
       if(error)throw error;return data||[];
@@ -94,10 +115,13 @@
       if(error)throw error;return data||[];
     },
     async searchPatients(search,limit=10){
-      const {data,error}=await this.client.rpc('api_staff_buscar_pacientes',{
-        p_busqueda:search,p_limite:limit
+      const args={search:String(search||'').trim().toLowerCase(),limit};
+      return cachedRead('searchPatients',args,5000,async()=>{
+        const {data,error}=await this.client.rpc('api_staff_buscar_pacientes',{
+          p_busqueda:search,p_limite:limit
+        });
+        if(error)throw error;return data||[];
       });
-      if(error)throw error;return data||[];
     },
     async createStaffPatient(form){
       const {data,error}=await this.client.rpc('api_staff_crear_paciente',{
@@ -110,8 +134,10 @@
 
     // ---------------- Médicos / citas reales ----------------
     async activeDoctors(branch=''){
-      const {data,error}=await this.client.rpc('api_listar_medicos_activos',{p_sede:branch||null});
-      if(error)throw error;return data||[];
+      return cachedRead('activeDoctors',{branch},60000,async()=>{
+        const {data,error}=await this.client.rpc('api_listar_medicos_activos',{p_sede:branch||null});
+        if(error)throw error;return data||[];
+      });
     },
     async staffAppointments({branch='',doctor='',status='',from=null,to=null,limit=200}={}){
       const {data,error}=await this.client.rpc('api_staff_listar_citas',{
@@ -194,8 +220,10 @@
       if(error)throw error;return data||[];
     },
     async medicationCatalog(){
-      const {data,error}=await this.client.rpc('api_catalogo_medicamentos');
-      if(error)throw error;return data||[];
+      return cachedRead('medicationCatalog',{},300000,async()=>{
+        const {data,error}=await this.client.rpc('api_catalogo_medicamentos');
+        if(error)throw error;return data||[];
+      });
     },
     async createPrescription(form){
       const {data,error}=await this.client.rpc('api_medico_crear_prescripcion',{
@@ -219,8 +247,10 @@
 
     // ---------------- Laboratorio real ----------------
     async labExamCatalog(){
-      const {data,error}=await this.client.rpc('api_catalogo_examenes');
-      if(error)throw error;return data||[];
+      return cachedRead('labExamCatalog',{},300000,async()=>{
+        const {data,error}=await this.client.rpc('api_catalogo_examenes');
+        if(error)throw error;return data||[];
+      });
     },
     async staffLabOrders({search='',branch='',status='',doctor='',limit=250}={}){
       const {data,error}=await this.client.rpc('api_staff_listar_laboratorio',{
@@ -267,8 +297,10 @@
 
     // ---------------- Enfermería real ----------------
     async activeNurses(branch=''){
-      const {data,error}=await this.client.rpc('api_listar_enfermeros_activos',{p_sede:branch||null});
-      if(error)throw error;return data||[];
+      return cachedRead('activeNurses',{branch},60000,async()=>{
+        const {data,error}=await this.client.rpc('api_listar_enfermeros_activos',{p_sede:branch||null});
+        if(error)throw error;return data||[];
+      });
     },
     async nursingTasks({search='',branch='',status='',priority='',nurse='',from=null,to=null,limit=300}={}){
       const {data,error}=await this.client.rpc('api_staff_listar_enfermeria',{
@@ -464,8 +496,11 @@
       if(error)throw error;return data;
     },
     async realBranches(search=''){
-      const {data,error}=await this.client.rpc('api_staff_listar_sedes',{p_busqueda:search||null});
-      if(error)throw error;return data||[];
+      const normalized=String(search||'').trim().toLowerCase();
+      return cachedRead('realBranches',{search:normalized},120000,async()=>{
+        const {data,error}=await this.client.rpc('api_staff_listar_sedes',{p_busqueda:search||null});
+        if(error)throw error;return data||[];
+      });
     }
 ,
 
@@ -491,8 +526,10 @@
     },
     async publicMaintenance(){
       if(!this.client)await this.init();
-      const {data,error}=await this.client.rpc('api_mantenimiento_publico');
-      if(error)throw error;return data||{active:false};
+      return cachedRead('publicMaintenance',{},15000,async()=>{
+        const {data,error}=await this.client.rpc('api_mantenimiento_publico');
+        if(error)throw error;return data||{active:false};
+      });
     },
     async maintenanceHistory(limit=20){
       const {data,error}=await this.client.rpc('api_mantenimiento_historial',{p_limite:limit});
