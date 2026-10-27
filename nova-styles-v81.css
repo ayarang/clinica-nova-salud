@@ -231,3 +231,20 @@ input,select,textarea{transition:border-color .15s ease,box-shadow .15s ease}inp
 @media(max-width:1050px){.v75-kpis{grid-template-columns:repeat(3,1fr)}.v75-report-grid{grid-template-columns:1fr}.v75-receipt-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){.v75-kpis{grid-template-columns:1fr 1fr}.v75-scroll-hint{display:block}.v75-rangebar label{min-width:calc(50% - 6px)}.v75-receipt-top{flex-direction:column}.v75-docbox{text-align:left;min-width:0}.v75-receipt-grid{grid-template-columns:1fr}.v75-receipt-bottom{grid-template-columns:1fr}.v75-qr{margin:auto}.v75-totalbox{text-align:center}.v75-ficha-grid{grid-template-columns:1fr}.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*{flex:1 1 160px}}
 @media(max-width:460px){.v75-kpis{grid-template-columns:1fr}.v75-rangebar label{min-width:100%}.v75-quickranges{width:100%}.v75-quickranges .btn{flex:1}.content{padding-left:12px;padding-right:12px}}
+
+/* Nova Salud v8.3 · Laboratorio: tabla contenida con scroll siempre accesible */
+#v66LabTable{min-width:0;max-width:100%}
+#v66LabTable .tablewrap{
+  width:100%;max-width:100%;overflow:auto;
+  max-height:calc(100dvh - 365px);min-height:300px;
+  scrollbar-gutter:stable both-edges;overscroll-behavior:contain;
+  border:1px solid var(--line);border-radius:14px;background:#fff
+}
+#v66LabTable .table{min-width:1180px;margin:0}
+#v66LabTable .table thead th{
+  position:sticky;top:0;z-index:3;background:#f4f8fa
+}
+@media(max-width:900px){
+  #v66LabTable .tablewrap{max-height:58dvh;min-height:260px}
+  #v66LabTable .table{min-width:1080px}
+}

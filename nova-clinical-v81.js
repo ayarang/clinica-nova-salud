@@ -14,6 +14,7 @@
         window.NOVA_REMOTE_SEDES=r.sedes||[];
         badge(`Supabase conectado · ${window.NOVA_REMOTE_SEDES.length} sedes · Auth listo`,'ok','PostgreSQL, Data API y Supabase Auth disponibles. Los módulos se migran de forma progresiva.');
         console.info('[Nova Salud] Supabase conectado',window.NOVA_REMOTE_SEDES);
+        document.dispatchEvent(new CustomEvent('nova:remote-ready',{detail:{sedes:window.NOVA_REMOTE_SEDES.length}}));
       }else if(r?.reason==='NO_CONFIG'){
         badge('Demo local · configura Supabase','demo','Edita nova-supabase-config.js con Project URL y Publishable key.');
       }else{
@@ -22,8 +23,8 @@
       }
     }catch(err){badge('Supabase sin conexión','err',err?.message||String(err));console.error(err)}
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(connectNova,100));
-  else setTimeout(connectNova,100);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',connectNova,{once:true});
+  else connectNova();
 })();
 ;
 
@@ -122,7 +123,8 @@
       if(ctx.kind==='patient')patientPortal(mapPatientProfile(ctx));
     }catch(err){console.warn('[Nova Salud] No se pudo restaurar sesión',err)}
   }
-  setTimeout(restoreRealSession,900);
+  if(remoteReady())queueMicrotask(restoreRealSession);
+  else document.addEventListener('nova:remote-ready',restoreRealSession,{once:true});
 })();
 ;
 
