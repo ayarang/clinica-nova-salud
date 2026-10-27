@@ -7,6 +7,7 @@ style.textContent=[
 '.nova-wa-trigger{position:fixed;right:18px;bottom:90px;z-index:2250;background:#e5fff0;color:#116443;',
 'border:1px solid #b8edcf;border-radius:999px;padding:12px 17px;font:800 14px system-ui;',
 'box-shadow:0 10px 30px rgba(10,90,54,.17);cursor:pointer}',
+'.nova-wa-trigger[hidden]{display:none!important}',
 '.nova-wa-trigger:hover{background:#cdf8df}',
 '.nova-wa-trigger small{display:block;font-size:10px;font-weight:600}',
 '.nova-wa-dialog{border:0;border-radius:22px;padding:0;width:min(450px,calc(100vw - 30px));',
@@ -36,6 +37,8 @@ document.head.append(style);
 const trigger=document.createElement('button');
 trigger.id='nova-wa-trigger';trigger.className='nova-wa-trigger';trigger.type='button';
 trigger.setAttribute('aria-haspopup','dialog');
+// Oculto desde el primer instante: solo se muestra en el portal autenticado.
+trigger.hidden=true;
 trigger.innerHTML='💬 WhatsApp<small>Demostración</small>';
 document.body.append(trigger);
 const dlg=document.createElement('dialog');
@@ -61,7 +64,25 @@ dlg.innerHTML=[
 '</div><p class="nova-wa-note">No es un canal real de consultas médicas. No compartas datos clínicos en esta demo.</p></div>'
 ].join('');
 document.body.append(dlg);
-function open(){if(!dlg.open)dlg.showModal();}
+// WhatsApp es una función del portal del paciente, no del personal ni de la portada.
+const patientAppView=document.getElementById('appView');
+function isPatientSession(){
+  return Boolean(patientAppView)
+    && !patientAppView.classList.contains('hidden')
+    && typeof state!=='undefined'
+    && state.role==='patient'
+    && Boolean(state.user);
+}
+function syncWhatsAppVisibility(){
+  const allowed=isPatientSession();
+  trigger.hidden=!allowed;
+  if(!allowed && dlg.open)dlg.close();
+}
+function open(){
+  // Evita abrir el diálogo desde JS cuando el rol no es paciente.
+  if(!isPatientSession())return;
+  if(!dlg.open)dlg.showModal();
+}
 function close(){if(dlg.open)dlg.close();}
 trigger.addEventListener('click',open);
 dlg.addEventListener('click',function(e){
@@ -84,5 +105,19 @@ dlg.addEventListener('click',function(e){
    } else document.querySelector('[data-action="patient-portal"]')?.click();
  }
 });
-window.NovaWhatsAppPreview={open:open,close:close};
+// Las transiciones de entrada/salida ya cambian la clase del portal en Nova.
+syncWhatsAppVisibility();
+if(patientAppView){
+  new MutationObserver(syncWhatsAppVisibility).observe(patientAppView,{
+    attributes:true,attributeFilter:['class']
+  });
+}
+// Ocultar de inmediato al solicitar cierre de sesión.
+document.addEventListener('click',function(e){
+  if(e.target.closest('[data-action="logout"]')){
+    trigger.hidden=true;
+    close();
+  }
+},true);
+window.NovaWhatsAppPreview={open:open,close:close,sync:syncWhatsAppVisibility};
 })();
