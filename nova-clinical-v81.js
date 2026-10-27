@@ -421,21 +421,45 @@
   function actionHtml(x){
     if(state.role!=='laboratorio')return `<button class="btn btn-outline btn-xs" data-v66-lab-view="${esc(x.order_code)}">Ver</button>`;
     const a=[];
-    if(['SOLICITADO','MUESTRA_PENDIENTE'].includes(x.status))a.push(`<button class="btn btn-outline btn-xs" data-v66-lab-sample="${esc(x.order_code)}">Muestra tomada</button>`);
+    if(['SOLICITADO','MUESTRA_PENDIENTE'].includes(x.status))a.push(`<button class="btn btn-outline btn-xs" data-v66-lab-sample="${esc(x.order_code)}">Registrar muestra</button>`);
     if(x.status==='EN_PROCESO'){
       a.push(`<button class="btn btn-primary btn-xs" data-v66-lab-result="${esc(x.order_code)}">${x.result_text?'Editar resultado':'Registrar resultado'}</button>`);
-      if(x.result_text&&!x.validated)a.push(`<button class="btn btn-outline btn-xs" data-v66-lab-validate="${esc(x.order_code)}">Validar</button>`);
+      if(x.result_text&&!x.validated)a.push(`<button class="btn btn-outline btn-xs" data-v66-lab-validate="${esc(x.order_code)}">Validar resultado</button>`);
     }
-    if(x.status==='RESULTADO_LISTO')a.push(`<button class="btn btn-outline btn-xs" data-v66-lab-deliver="${esc(x.order_code)}">Entregar</button>`);
+    if(x.status==='RESULTADO_LISTO')a.push(`<button class="btn btn-outline btn-xs" data-v66-lab-deliver="${esc(x.order_code)}">Entregar resultado</button>`);
     a.push(`<button class="btn btn-outline btn-xs" data-v66-lab-view="${esc(x.order_code)}">Ver</button>`);
     return `<div class="v66-lab-actions">${a.join('')}</div>`;
+  }
+
+  function labFlowStep(x){
+    if(x.status==='ENTREGADO')return 6;
+    if(x.status==='RESULTADO_LISTO')return 5;
+    if(x.status==='EN_PROCESO'&&x.result_text&&!x.validated)return 4;
+    if(x.status==='EN_PROCESO')return 3;
+    if(['SOLICITADO','MUESTRA_PENDIENTE'].includes(x.status))return 2;
+    return 1;
+  }
+  function labFlowHtml(x=null){
+    const current=x?labFlowStep(x):0;
+    const steps=[
+      ['1','Orden médica','El médico solicita el examen en Nova Salud.'],
+      ['2','Paciente a Laboratorio','El paciente acude con su orden; no lleva el resultado al médico.'],
+      ['3','Registrar muestra','Laboratorio recibe o toma la muestra según el examen.'],
+      ['4','Procesar resultado','Laboratorio analiza y registra el resultado.'],
+      ['5','Validar','El resultado queda validado y disponible en el sistema.'],
+      ['6','Entrega / consulta','Paciente y médico consultan el resultado según permisos.']
+    ];
+    return `<div class="v66-flow" aria-label="Flujo de laboratorio">${steps.map((s,i)=>{
+      const n=i+1,cls=current?(n<current?'done':n===current?'current':''):'';
+      return `<div class="v66-flow-step ${cls}"><span>${s[0]}</span><div><b>${s[1]}</b><small>${s[2]}</small></div></div>`;
+    }).join('')}</div>`;
   }
 
   async function renderLaboratoryRemote(c){
     if(!remoteOk())return c.innerHTML=errBox('Supabase no está conectado');
     const global=state.role==='gerencia', doctor=state.role==='medico';
     const defaultBranch=global?'Todas las sedes':userBranch();
-    c.innerHTML=`<div class="workflow-toolbar"><div class="left"><input id="v66LabSearch" placeholder="Orden, DNI, paciente o examen"><select id="v66LabBranch" ${global?'':'disabled'}>${branchOptions(true)}</select><select id="v66LabStatus"><option value="">Todos los estados</option><option value="MUESTRA_PENDIENTE">Muestra pendiente</option><option value="EN_PROCESO">En proceso</option><option value="RESULTADO_LISTO">Resultado listo</option><option value="ENTREGADO">Entregado</option></select></div><div class="right"><span class="badge ok">PostgreSQL real</span>${doctor?'<button class="btn btn-primary" data-v66-new-lab-order>+ Nueva orden</button>':''}</div></div><div class="v66-lab-note"><b>Laboratorio real:</b> el Médico solicita el examen; Laboratorio registra muestra, resultado, validación y entrega. Gerencia mantiene consulta global.</div><div id="v66LabKpis" class="v66-lab-kpis"></div><div id="v66LabTable">${loading('Consultando órdenes...')}</div>`;
+    c.innerHTML=`<div class="workflow-toolbar"><div class="left"><input id="v66LabSearch" placeholder="Orden, DNI, paciente o examen"><select id="v66LabBranch" ${global?'':'disabled'}>${branchOptions(true)}</select><select id="v66LabStatus"><option value="">Todos los estados</option><option value="MUESTRA_PENDIENTE">Muestra pendiente</option><option value="EN_PROCESO">En proceso</option><option value="RESULTADO_LISTO">Resultado listo</option><option value="ENTREGADO">Entregado</option></select></div><div class="right"><span class="badge ok">PostgreSQL real</span>${doctor?'<button class="btn btn-primary" data-v66-new-lab-order>+ Nueva orden</button>':''}</div></div><div class="v66-lab-note"><b>Flujo clínico:</b> el Médico genera la orden electrónica; el paciente acude a Laboratorio; Laboratorio recibe o toma la muestra según el examen, procesa, registra y valida el resultado. El médico consulta el resultado directamente en Nova Salud.</div>${labFlowHtml()}<div id="v66LabKpis" class="v66-lab-kpis"></div><div id="v66LabTable">${loading('Consultando órdenes...')}</div>`;
     $('#v66LabBranch').value=defaultBranch;
     let timer;
     const update=async()=>{
@@ -479,7 +503,7 @@
   }
 
   function rowByOrder(code){return currentRows.find(x=>x.order_code===code)}
-  function viewLabOrder(code){const x=rowByOrder(code);if(!x)return showToast('Actualiza la lista para ver la orden');modal(`<span class="eyebrow">Orden de laboratorio</span><h2>${esc(x.order_code)} · ${esc(x.test)}</h2><div class="formgrid"><label>Paciente<input value="${esc(x.patient)} · DNI ${esc(x.patient_dni)}" disabled></label><label>Médico<input value="${esc(x.doctor)}" disabled></label><label>Sede<input value="${esc(x.branch)}" disabled></label><label>Estado<input value="${esc(statusLabel(x.status))}" disabled></label></div><div class="v66-result-box"><b>Resultado</b>${x.result_text?`<div>${esc(x.result_text)}</div>${x.result_value?`<div><strong>${esc(x.result_value)} ${esc(x.result_unit||'')}</strong> · ref. ${esc(x.result_range||x.reference_range||'—')}</div>`:''}<small class="muted">${x.validated?'Validado':'Pendiente de validación'}${x.lab_tech?` · ${esc(x.lab_tech)}`:''}</small>`:'<span class="muted">Aún no existe resultado registrado.</span>'}</div>`,true)}
+  function viewLabOrder(code){const x=rowByOrder(code);if(!x)return showToast('Actualiza la lista para ver la orden');modal(`<span class="eyebrow">Orden de laboratorio</span><h2>${esc(x.order_code)} · ${esc(x.test)}</h2><div class="formgrid"><label>Paciente<input value="${esc(x.patient)} · DNI ${esc(x.patient_dni)}" disabled></label><label>Médico<input value="${esc(x.doctor)}" disabled></label><label>Sede<input value="${esc(x.branch)}" disabled></label><label>Estado<input value="${esc(statusLabel(x.status))}" disabled></label></div><div class="v66-flow-modal"><h3>Flujo actual</h3>${labFlowHtml(x)}</div><div class="v66-result-box"><b>Resultado</b>${x.result_text?`<div>${esc(x.result_text)}</div>${x.result_value?`<div><strong>${esc(x.result_value)} ${esc(x.result_unit||'')}</strong> · ref. ${esc(x.result_range||x.reference_range||'—')}</div>`:''}<small class="muted">${x.validated?'Validado':'Pendiente de validación'}${x.lab_tech?` · ${esc(x.lab_tech)}`:''}</small>`:'<span class="muted">Aún no existe resultado registrado.</span>'}</div>`,true)}
 
   function openResultForm(code){const x=rowByOrder(code);if(!x)return;modal(`<span class="eyebrow">Procesamiento de laboratorio</span><h2>${esc(x.order_code)} · ${esc(x.test)}</h2><form id="v66LabResultForm"><label>Resultado / interpretación<textarea name="resultText" required>${esc(x.result_text||'')}</textarea></label><div class="formgrid" style="margin-top:10px"><label>Valor<input name="value" value="${esc(x.result_value||'')}"></label><label>Unidad<input name="unit" value="${esc(x.result_unit||x.reference_unit||'')}"></label><label>Rango referencial<input name="range" value="${esc(x.result_range||x.reference_range||'')}"></label><label>Estado<input value="Pendiente de validación" disabled></label></div><label style="margin-top:10px">Observación<textarea name="observation">${esc(x.result_note||'')}</textarea></label><button class="btn btn-primary" style="margin-top:14px">Guardar resultado</button></form>`);$('#v66LabResultForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target),btn=e.target.querySelector('button');btn.disabled=true;btn.textContent='Guardando…';try{await NovaAPI.saveLabResult({orderCode:code,resultText:fd.get('resultText'),value:fd.get('value'),unit:fd.get('unit'),range:fd.get('range'),observation:fd.get('observation')});closeModal();showToast('Resultado guardado · pendiente de validación');go('laboratory')}catch(err){showToast(err?.message||String(err));btn.disabled=false;btn.textContent='Guardar resultado'}}}
 
