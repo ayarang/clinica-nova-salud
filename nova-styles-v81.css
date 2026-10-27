@@ -248,3 +248,30 @@ input,select,textarea{transition:border-color .15s ease,box-shadow .15s ease}inp
   #v66LabTable .tablewrap{max-height:58dvh;min-height:260px}
   #v66LabTable .table{min-width:1080px}
 }
+
+
+/* Nova Salud v8.4 · Flujo clínico de Laboratorio */
+.v66-flow{
+  display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:8px;
+  margin:12px 0 16px;overflow-x:auto;padding:2px 1px 8px
+}
+.v66-flow-step{
+  min-width:130px;border:1px solid #d8e6ec;background:#fff;border-radius:13px;
+  padding:10px;display:flex;gap:9px;align-items:flex-start
+}
+.v66-flow-step>span{
+  flex:0 0 28px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+  background:#edf5f8;color:#315f79;font-weight:900;font-size:.78rem
+}
+.v66-flow-step b,.v66-flow-step small{display:block}
+.v66-flow-step b{font-size:.78rem;color:#244d66}
+.v66-flow-step small{font-size:.68rem;color:#6e8794;line-height:1.35;margin-top:3px}
+.v66-flow-step.done{background:#f0faf6;border-color:#c8e8db}
+.v66-flow-step.done>span{background:#dff4ea;color:#17684d}
+.v66-flow-step.current{background:#eef8fc;border-color:#9fd0e2;box-shadow:0 0 0 2px rgba(47,127,167,.08)}
+.v66-flow-step.current>span{background:#2f7fa7;color:#fff}
+.v66-flow-modal{margin:14px 0}
+.v66-flow-modal h3{margin:0 0 8px}
+@media(max-width:900px){
+  .v66-flow{grid-template-columns:repeat(6,170px)}
+}
