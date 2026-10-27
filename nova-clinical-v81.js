@@ -328,7 +328,14 @@
       events.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
       const canEdit=state.role==='medico';
       modal(`<div class="v65-clinical-head"><div><span class="eyebrow">Ficha clínica PostgreSQL</span><h2 style="margin:6px 0">${esc(p.name)}</h2><p class="muted" style="margin:0">${esc(p.code)} · DNI ${esc(p.dni)} · HC ${esc(p.history_code)} · ${esc(p.branch)}</p></div><div class="v65-clinical-actions">${canEdit?`<button class="btn btn-primary btn-sm" data-v65-new-consultation data-patient-code="${esc(p.code)}">+ Consulta</button><button class="btn btn-outline btn-sm" data-v65-edit-allergies="${esc(p.code)}">Editar alergias</button>`:''}</div></div><div class="allergy-alert" style="${allergies.length?'':'border-color:#b9dfcf;background:#f1fbf6;color:#24674f'}"><span class="alert-icon">${allergies.length?'⚠️':'✓'}</span><div><b>Alergias medicamentosas activas</b>${allergyHtml(allergies)}</div></div><div class="v65-summary"><div><small>Consultas</small><b>${consults.length}</b></div><div><small>Prescripciones</small><b>${rx.length}</b></div><div><small>Origen</small><b style="font-size:1rem">PostgreSQL</b></div></div><h3>Atenciones y medicamentos</h3><div class="v65-timeline">${events.length?events.map(x=>x.html).join(''):'<div class="notice">Todavía no existen movimientos clínicos para este paciente.</div>'}</div>`);
-    }catch(e){modal(errBox(e),true)}
+    }catch(e){
+      const msg=String(e?.message||e||'');
+      if(/fuera del alcance|acceso denegado/i.test(msg)){
+        modal(`<div class="coverage-alert"><b>⚠ Acceso clínico restringido</b><div>${esc(msg)}</div></div>`,true);
+      }else{
+        modal(errBox(e),true);
+      }
+    }
   }
 
   async function openConsultationRemote(preselected=''){
