@@ -46,11 +46,37 @@
   function setRange(prefix,key){const [from,to]=rangeFor(key),a=q(`#${prefix}From`),b=q(`#${prefix}To`);if(a)a.value=from;if(b)b.value=to;qa(`[data-prefix="${prefix}"][data-v75-range]`).forEach(x=>x.classList.toggle('active',x.dataset.v75Range===key))}
   function validRange(from,to){if(from&&to&&from>to){showToast('La fecha “Desde” no puede ser posterior a “Hasta”');return false}return true}
 
+  // -------- Carga bajo demanda de librerías pesadas --------
+  const lazyScripts=new Map();
+  function ensureScript(url,globalName){
+    if(globalName&&window[globalName])return Promise.resolve(window[globalName]);
+    if(lazyScripts.has(url))return lazyScripts.get(url);
+    const p=new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src=url;s.async=true;s.crossOrigin='anonymous';
+      s.onload=()=>resolve(globalName?window[globalName]:true);
+      s.onerror=()=>{lazyScripts.delete(url);reject(new Error('No se pudo cargar '+url))};
+      document.head.appendChild(s);
+    });
+    lazyScripts.set(url,p);
+    return p;
+  }
+
   // -------- Exportación / impresión --------
-  function exportRows(filename,headers,rows){
+  async function exportRows(filename,headers,rows){
     const data=[headers,...rows];
-    if(window.XLSX){const ws=XLSX.utils.aoa_to_sheet(data),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Reporte');XLSX.writeFile(wb,filename.endsWith('.xlsx')?filename:filename+'.xlsx');return}
-    const csv=data.map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\n'),blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename.replace(/\.xlsx$/i,'.csv');a.click();setTimeout(()=>URL.revokeObjectURL(a.href),250);
+    try{
+      await ensureScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js','XLSX');
+      const ws=XLSX.utils.aoa_to_sheet(data),wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,'Reporte');
+      XLSX.writeFile(wb,filename.endsWith('.xlsx')?filename:filename+'.xlsx');
+      return;
+    }catch(_e){
+      const csv=data.map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\n'),
+        blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);a.download=filename.replace(/\.xlsx$/i,'.csv');a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),250);
+    }
   }
   function printReport(title,subtitle,headers,rows){
     const w=window.open('','_blank','width=1100,height=850');if(!w)return showToast('El navegador bloqueó la ventana de impresión');
@@ -60,7 +86,8 @@
   // -------- QR y boleta --------
   function qrText(x){return `NOVA SALUD DEMO | BOLETA ${x.invoice_code} | FECHA ${x.issued} | DNI ${x.patient_dni} | TOTAL ${money(x.total)} | SIN VALIDEZ TRIBUTARIA`}
   async function makeQr(text,size=128){
-    if(!window.QRCode)return '';
+    try{await ensureScript('https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js','QRCode')}
+    catch(_e){return ''}
     const host=document.createElement('div');host.style.position='fixed';host.style.left='-9999px';document.body.appendChild(host);
     try{new QRCode(host,{text,width:size,height:size,correctLevel:QRCode.CorrectLevel.M});await new Promise(r=>setTimeout(r,30));const c=host.querySelector('canvas');if(c)return c.toDataURL('image/png');const im=host.querySelector('img');return im?.src||''}finally{host.remove()}
   }
