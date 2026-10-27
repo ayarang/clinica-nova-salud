@@ -77,6 +77,9 @@
     }
     e.preventDefault();e.stopImmediatePropagation();
     const form=e.target,fd=new FormData(form);
+    // El valor queda solo en FormData el tiempo necesario para enviarlo a Supabase Auth.
+    const passwordField=form.querySelector('[name="password"]');
+    if(passwordField)passwordField.value='';
     try{
       if(id==='staffLogin'){
         setBusy(form,true,'Ingresando…');
